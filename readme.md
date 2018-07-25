@@ -1,7 +1,7 @@
 Twitter Analytics System
 ===============================
 
-Introduction:
+Introduction:-
 --------------------
 
 Twitter generates millions of tweets each day. A vast amount of information is hence available for different kinds of analyses. The end users of these analyses however, may or may not be technically proficient. This necessitates the need of a system that can absorb such large amounts of data and at the same time, provide an intuitive abstraction over this data. This abstraction should allow the end users to specify different kinds of analyses without going into the technicalities of the implementation.
