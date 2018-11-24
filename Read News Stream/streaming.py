@@ -24,7 +24,7 @@ NEWSAPI_APP_TOKEN = "ed76ef6934984c8e861740457dd8d92a"
 # NEWSAPI_APP_TOKEN = "bc5586a6f9734be9a891ca0b6d06f244"
 # NEWSAPI_APP_TOKEN = "88390a3ce2dd4aad8296543c9af1d95c"
 
-NEWS_API = "https://newsapi.org/v2/everything?sources=the-times-of-india,the-hindu&language=en&apiKey={}".format(NEWSAPI_APP_TOKEN)
+NEWS_API = "https://newsapi.org/v2/everything?sources=the-times-of-india,the-hindu,the-washington-post,the-new-york-times&pageSize=100&language=en&apiKey={}".format(NEWSAPI_APP_TOKEN)
 URL = ("https://streamdata.motwin.net/{}&X-Sd-Token={}".format(NEWS_API, STREAMDATAIO_APP_TOKEN))
 
 
@@ -98,7 +98,7 @@ def getAuthors(text):
 #keywords list
 from nltk.tokenize import word_tokenize, RegexpTokenizer
 from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer
+# from nltk.stem import PorterStemmer
 
 
 def getKeywords(text):
@@ -135,11 +135,13 @@ def getKeywords(text):
 
   #stopword removal
   stop_words = stopwords.words('english')
-  tokens = [token.lower() for token in tokens if (token.lower() not in stop_words and token not in NE)]
+  tokens = [token.lower() for token in tokens if (token.lower() not in stop_words and token not in NE and not token.isdigit())]
 
   #stemming
-  ps = PorterStemmer()
-  tokens = [ps.stem(w) for w in tokens]
+  # ps = PorterStemmer()
+  lemma = nltk.wordnet.WordNetLemmatizer()
+  tokens = [lemma.lemmatize(w) for w in tokens]
+  tokens = [token for token in tokens if (len(token)!=1 )]
 
   continuous_chunk.extend(tokens)
 
@@ -172,6 +174,7 @@ def run(data, headers, retryCount):
 
   articles = []
   count = 0
+  db_news_count = db.news.count()
 
   print(headers)
   try:
@@ -187,7 +190,7 @@ def run(data, headers, retryCount):
                   if('articles' in data):
                     for article in data['articles']:
                       authors = []
-                      print(article)
+                      # print(article)
                       if(article['author']):
                         authors = getAuthors(article['author'])
                       articles.append({'source':article['source']['name'],'title':article['title'],'description':article['description'],'url':article['url'],'publishAt':datetime.datetime.strptime(article['publishedAt'], "%Y-%m-%dT%H:%M:%SZ"),'sentiment':sentiment(article['description']),'keywords':getKeywords(article['title']),'authors':authors})
@@ -196,6 +199,8 @@ def run(data, headers, retryCount):
                       db.news.insert_many(articles,ordered=False)
                     except pymongo.errors.BulkWriteError as e:
                       print(e)
+                    print("new News received: "+str(db.news.count() - db_news_count))
+                    db_news_count = db.news.count()
                     count=count+1
                     print("count: "+str(count))
                     start = time.time()
@@ -217,7 +222,7 @@ def run(data, headers, retryCount):
                   if('articles' in data):
                     for article in data['articles']:
                       authors = []
-                      print(article)
+                      # print(article)
                       if(article['author']):
                         authors = getAuthors(article['author'])
                       articles.append({'source':article['source']['name'],'title':article['title'],'description':article['description'],'url':article['url'],'publishAt':datetime.datetime.strptime(article['publishedAt'], "%Y-%m-%dT%H:%M:%SZ"),'sentiment':sentiment(article['description']),'keywords':getKeywords(article['title']),'authors':authors})
@@ -231,6 +236,8 @@ def run(data, headers, retryCount):
 
                     print("result: "+str(result))
                     print("insert elapsed time: "+str(time.time() - start)+" sec")
+                    print("new News received: "+str(db.news.count() - db_news_count))
+                    db_news_count = db.news.count()
                     count=count+1
                     print("count: "+str(count))
 
