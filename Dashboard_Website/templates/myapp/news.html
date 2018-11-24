@@ -1,0 +1,242 @@
+{% load static %}
+<div>
+{% include "myapp/theme.html" %}
+</div>
+
+{% load crispy_forms_tags %}
+
+{% include 'material/includes/material_css.html' %}
+<script src="{% static 'material/js/jquery.js' %}"></script>
+{% include 'material/includes/material_js.html' %}
+{% load material_form %}
+
+{% block head %}
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hashtags</title>
+
+    <style type="text/css">
+      html, body {
+          background: #eee;
+          height: 100%;
+      }
+    </style>
+
+    <style type="text/css">
+    .heading {
+         width: 100%;
+         text-align: center;
+         border-bottom: 1px solid #000;
+         line-height: 0.1em;
+         margin: 10px 0 20px;
+    }
+
+    .heading span {
+            background:#fff;
+            padding:0 10px;
+    }
+    </style>
+</head>
+
+{% endblock %}
+
+{% block body %}
+
+<div class="container-fluid">
+	<ul class="nav nav-tabs">
+	  <li class="active"><a id="tab1" data-toggle="tab" href="#top20">Top 20</a></li>
+	  <li><a id="tab2" data-toggle="tab" href="#sentiment2">Sentiment Analysis</a></li>
+	  <li><a id="tab3" data-toggle="tab" href="#usage2plot">Usage Plot</a></li>
+	</ul>
+
+	<div class="tab-content">
+
+		<div id="top20" class="tab-pane fade in active">
+			<h5>View top 20 keywords in history</h5>
+            <div class="valign-wrapper2">
+                <div class="container expand-on-small-only">
+                    <div class="row valign change-form">
+                        <div class="col s12 m8 offset-m2 l8 offset-l2">
+                            <div class="card" style="width:100%;padding-left:45px;padding-right:45px;padding-bottom:45px;padding-top:45px;">
+                			<form id="top20form" method="post" action="keyword_top20_getter/">{% csrf_token %}
+                				{% form form=top20_form %}{% endform %}
+                			    <br>
+                			    <button type="submit" class="btn btn-primary">Submit!</button>
+                			</form>
+                			<br>
+                			<div class="row">
+            				<div id="top20list" >
+            					<!-- Top 20 keywords list will be drawn inside this DIV -->
+            				</div>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+               </div>
+		    </div>
+		</div>
+
+		<div id="sentiment2" class="tab-pane fade">
+			<h5>Analyze a keyword's sentiment history</h5>
+            <div class="valign-wrapper2">
+                <div class="container expand-on-small-only">
+                    <div class="row valign change-form">
+                        <div class="col s12 m8 offset-m2 l8 offset-l2">
+                            <div class="card" style="width:100%;padding-left:45px;padding-right:45px;padding-bottom:45px;padding-top:45px;">
+                			<form id="sentiment2form" method="post" action="keyword_sentiment_getter/">{% csrf_token %}
+                                {% form form=sentiment_form %}{% endform %}
+                			    <br>
+                			    <button type="submit" class="btn btn-primary">Plot!</button>
+                			</form>
+                			<div id="sentiment2_plot">
+                				<!-- Plotly chart will be drawn inside this DIV -->
+                			</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+		</div>
+
+		<div id="usage2plot" class="tab-pane fade">
+			<h5>Analyze a keyword's usage history</h5>
+            <div class="valign-wrapper2">
+                <div class="container expand-on-small-only">
+                    <div class="row valign change-form">
+                        <div class="col s12 m8 offset-m2 l8 offset-l2">
+                            <div class="card" style="width:100%;padding-left:45px;padding-right:45px;padding-bottom:45px;padding-top:45px;">
+                			<form id="usage2form" method="post" action="keyword_usage_getter/">{% csrf_token %}
+                			    {% form form=usage_form %}{% endform %}
+                			    <br>
+                			    <button type="submit" class="btn btn-primary">Plot!</button>
+                			</form>
+                			<div id="usage2_plot">
+                				<!-- Plotly chart will be drawn inside this DIV -->
+                			</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+		</div>
+
+
+	</div>
+
+</div>
+
+
+
+<script type="text/javascript">
+	$(function(){
+	    $("#hashtags_tab").removeClass("active");
+	    $("#mentions_tab").removeClass("active");
+	    $("#urls_tab").removeClass("active");
+	    // $("#custom_metrics_tab").removeClass("active");
+	    $("#alerts_tab").removeClass("active");
+	    $("#create_query_tab").removeClass("active");
+	    $("#news_tab").addClass("active");
+	});
+</script>
+
+<script type="text/javascript">
+	function plot(x_, y_,title_,x_label,y_label,div_id) {
+		var data = [{
+			x: x_,
+			y: y_,
+			type: 'line'
+		}];
+		var layout = {
+			title: title_,
+			xaxis: {
+				title: x_label,
+				// showgrid: false,
+				zeroline: false
+			},
+			yaxis: {
+				title: y_label,
+				// showline: false
+			}
+		};
+		$("#"+div_id).html("");
+		Plotly.newPlot(div_id, data, layout);
+	}
+</script>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+	    var frm = $('#usage2form');
+	    frm.submit(function() {
+	        $.ajax({
+	            type: frm.attr('method'),
+	            url: frm.attr('action'),
+	            data: frm.serialize(),
+	            success: function (data) {
+	            	var hashtag_name = frm.find('input[name="hashtag"]').val();
+	            	console.log(data);
+	            	plot(data.x, data.y,'Usage vs Time for hashtag: '+hashtag_name,'Time','Count','usage2_plot');
+	            },
+	            error: function(data) {
+	                $("#usage2_plot").html("Something went wrong!");
+	            }
+	        });
+	        return false;
+	    });
+    });
+</script>
+
+
+<script type="text/javascript">
+	$(document).ready(function() {
+	    var frm = $('#top20form');
+	    frm.submit(function() {
+	        $.ajax({
+	            type: frm.attr('method'),
+	            url: frm.attr('action'),
+	            data: frm.serialize(),
+	            success: function (data) {
+	            	trHTML = '<ul class="list-group">';
+	            	$.each(data, function (i, item) {
+			            trHTML += '<li class="list-group-item">' + item.hashtag + '<span class="badge" style="color:white">' + item.count.toString() + '</span></li>';
+			        });
+	            	trHTML += '</ul>'
+	            	console.log(data);
+	            	console.log(trHTML);
+	            	$('#top20list').html(trHTML);
+	            },
+	            error: function(data) {
+	                $("#top20list").html("Something went wrong!");
+	            }
+	        });
+	        return false;
+	    });
+    });
+</script>
+
+
+<script type="text/javascript">
+	$(document).ready(function() {
+	    var frm = $('#sentiment2form');
+	    frm.submit(function() {
+	        $.ajax({
+	            type: frm.attr('method'),
+	            url: frm.attr('action'),
+	            data: frm.serialize(),
+	            success: function (data) {
+	            	var hashtag_name = frm.find('input[name="hashtag"]').val();
+	            	console.log(data);
+	            	plot(data.x, data.y,'Sentiment vs Time for hashtag: '+hashtag_name,'Time','Sentiment','sentiment2_plot');
+	            },
+	            error: function(data) {
+	                $("#sentiment2_plot").html("Something went wrong!");
+	            }
+	        });
+	        return false;
+	    });
+    });
+</script>
+
+{% endblock %}

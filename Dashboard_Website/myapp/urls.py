@@ -8,6 +8,12 @@ urlpatterns = [
 	url(r'^hashtags/hashtag_top10_getter/$', views.hashtag_top10_getter, name='hashtag_top10_getter'),
 	url(r'^hashtags/hashtag_sentiment_getter/$', views.hashtag_sentiment_getter, name='hashtag_sentiment_getter'),
 
+	url(r'^news/$', views.news, name='news'),
+	url(r'^news/keyword_top20_getter/$', views.keyword_top20_getter, name='keyword_top20_getter'),
+	url(r'^news/keyword_sentiment_getter/$', views.keyword_sentiment_getter, name='keyword_sentiment_getter'),
+	url(r'^news/keyword_usage_getter/$', views.keyword_usage_getter, name='keyword_usage_getter'),
+
+
 	# to delete
 	url(r"^create_metric/",views.query_creator,name="create_metric"),
 	url(r"^create_neo4j_query_handler/$",views.create_neo4j_query_handler,name="create_neo4j_query_handler"),
