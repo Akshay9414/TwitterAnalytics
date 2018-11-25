@@ -87,11 +87,15 @@ def binning2(vals, num_bins):
 	print("mappings: ",mappings)
 	counts = [0]*num_bins
 	for i,m in enumerate(mappings):
-		y[m]+=b[i]
-		counts[m]+=1
+		if b[i] is not None:
+			y[m]+=b[i]
+			counts[m]+=1
 	for i in range(0,60):
 		if counts[i]>0:
 			y[i]/=counts[i]
+			y[i]*=2
+			y[i]-=5
+			
 
 	return (x,y)
 
