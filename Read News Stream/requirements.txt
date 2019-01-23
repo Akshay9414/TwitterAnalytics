@@ -1,0 +1,4 @@
+jsonpatch
+requests
+sseclient-py
+terminaltables

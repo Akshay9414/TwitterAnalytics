@@ -1,0 +1,51 @@
+show dbs   // display all DB table
+
+use news  // select DB table
+
+db.news.count()  //count rows
+
+db.dropDatabase()      // This will delete the selected database
+
+
+// find group of sources
+db.news.aggregate([{$group:{ _id:"$source", num_source:{$sum:1} }}])
+
+// find group of authors
+db.news.aggregate([{$unwind:'$authors'}, {$group:{ _id:"$authors", num:{$sum:1} }},{$sort:{num:-1}}])
+
+// find group of keywords
+db.news.aggregate([{$unwind:'$keywords'}, {$group:{ _id:"$keywords", num:{$sum:1} }}, {$sort:{num:-1}}])
+
+
+// find top author w.r.t given keyword
+db.news.aggregate([{ $match:{keywords:"Kerala"} }, {$unwind:'$authors'}, {$group:{ _id:"$authors", num:{$sum:1} }}, {$sort:{num:-1}}])
+
+// find top sources w.r.t given keyword
+db.news.aggregate([{ $match:{keywords:"Kerala"} }, {$group:{ _id:"$source", num:{$sum:1} }}, {$sort:{num:-1}}])
+
+// between two dates
+db.news.aggregate([{ $match:{publishAt:{$gte:ISODate("2018-09-14"),$lte:ISODate("2018-09-15")}} }, {$unwind:'$authors'}, {$group:{ _id:"$authors", num:{$sum:1} }},{$sort:{num:-1}} ])
+db.news.aggregate([{ $match:{publishAt:{$gte:ISODate("2018-09-05"),$lte:ISODate("2018-09-14")}} }, {$unwind:'$keywords'}, {$group:{ _id:"$keywords", num:{$sum:1} }},{$sort:{num:-1}} ])
+
+// keyword usage history - GRAPH
+db.news.find({keywords:"Kerala",publishAt:{$gte:ISODate("2018-09-14"),$lte:ISODate("2018-09-15")}},{publishAt:1})
+
+// sentiments of the given keyword
+db.news.find({keywords:"Kerala",publishAt:{$gte:ISODate("2018-09-14"),$lte:ISODate("2018-09-15")}},{publishAt:1,sentiment:1})
+
+
+
+
+
+
+// find group of keywords w.r.t single keyword
+db.news.aggregate([{$match:{keywords:"Kerala",publishAt:{$gte:ISODate("2018-09-14"),$lte:ISODate("2018-09-15")}}},{$unwind:'$keywords'}, {$group:{ _id:"$keywords", num:{$sum:1} }}, {$sort:{num:-1}}])
+// w.r.t all multiple keywords
+db.news.aggregate([{$match:{keywords:{$all:["Kerala","flood"]},publishAt:{$gte:ISODate("2018-09-14"),$lte:ISODate("2018-09-15")}}},{$unwind:'$keywords'}, {$group:{ _id:"$keywords", num:{$sum:1} }}, {$sort:{num:-1}}])
+db.news.aggregate([{$match:{keywords:{$all:["Kerala","flood","relief"]},publishAt:{$gte:ISODate("2018-09-14"),$lte:ISODate("2018-09-15")}}},{$unwind:'$keywords'}, {$group:{ _id:"$keywords", num:{$sum:1} }}, {$sort:{num:-1}}])
+
+
+// Timeline - display news title containing the all given keywords
+db.news.find({keywords:{$all:['Kerala','flood','relief']},publishAt:{$gte:ISODate("2018-09-14"),$lte:ISODate("2018-09-15")}},{_id:0,title:1,publishAt:1}).pretty()
+// containing any one keyword
+db.news.find({keywords:{$in:['Kerala','flood','relief']},publishAt:{$gte:ISODate("2018-09-14"),$lte:ISODate("2018-09-15")}},{_id:0,title:1,publishAt:1}).pretty()

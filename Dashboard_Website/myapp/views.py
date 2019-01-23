@@ -52,6 +52,7 @@ mongo_mapping = {"mp_ht_in_total":"Give the most popular hashtags in total",
 ###################################################################################################
 dag_div = ""
 query_output  = ""
+
 def binning(vals, num_bins):
 	if len(vals) == 0:
 		return ([],[])
@@ -68,6 +69,34 @@ def binning(vals, num_bins):
 	print(mappings)
 	for i,m in enumerate(mappings):
 		y[m]+=b[i]
+	return (x,y)
+
+def binning2(vals, num_bins):
+	if len(vals) == 0:
+		return ([],[])
+	vals.sort(key=lambda x:x[0])
+	print(vals)
+	a,b = zip(*vals)
+	length = max(a)+1-min(a)
+	bin_length = length/num_bins
+	print(bin_length)
+	x = [min(a)+bin_length*i+bin_length/2 for i in range(num_bins)]
+	x = [datetime.fromtimestamp(x1) for x1 in x]
+	y = [0]*num_bins
+	mappings = [int((val-min(a))/bin_length) for val in a]
+	print("mappings: ",mappings)
+	counts = [0]*num_bins
+	for i,m in enumerate(mappings):
+		if b[i] is not None:
+			y[m]+=b[i]
+			counts[m]+=1
+	for i in range(0,60):
+		if counts[i]>0:
+			y[i]/=counts[i]
+			y[i]*=2
+			y[i]-=5
+			
+
 	return (x,y)
 
 def execute(query_name,inputs):
@@ -150,6 +179,12 @@ def hashtags(request):
 		return
 	return render(request, "myapp/hashtags.html", {"usage_form":HashtagForm(), "top10_form":Top10Form(), "sentiment_form":HashtagForm()})
 
+def news(request):
+	if request.method == 'POST':
+		print("POST request not supported at this route.")
+		return
+	return render(request, "myapp/news.html", {"top20_form":Top10Form(),"sentiment_form":HashtagForm(), "usage_form":HashtagForm()})
+
 def hashtag_usage_getter(request):
 	if request.method == 'GET':
 		print("GET request not supported at this route.")
@@ -162,6 +197,26 @@ def hashtag_usage_getter(request):
 		end_time = form.cleaned_data['end_time']
 		print(hashtag, start_time, end_time)
 		data = mongoQuery.ht_in_interval(hashtag, start_time.timestamp(), end_time.timestamp())
+		(x,y) = binning([(x,1) for x in data["timestamps"]],60)
+		data = {"x":x,"y":y}
+	else:
+		print(form['hashtag'].errors, form['start_time'].errors, form['end_time'].errors)
+
+	# data = {"x":[1,2,3,4], "y":[6,2,5,2]}
+	return JsonResponse(data)
+
+def keyword_usage_getter(request):
+	if request.method == 'GET':
+		print("GET request not supported at this route.")
+		return
+
+	form = HashtagForm(request.POST)
+	if form.is_valid():
+		hashtag = form.cleaned_data['hashtag']
+		start_time = form.cleaned_data['start_time']
+		end_time = form.cleaned_data['end_time']
+		print(hashtag, start_time, end_time)
+		data = mongoQuery.kw_in_interval(hashtag, start_time.timestamp(), end_time.timestamp())
 		(x,y) = binning([(x,1) for x in data["timestamps"]],60)
 		data = {"x":x,"y":y}
 	else:
@@ -188,6 +243,24 @@ def hashtag_top10_getter(request):
 	# data = [{"hashtag":"Sports","count":132}, {"hashtag":"Politics","count":95}, {"hashtag":"Health","count":55}, {"hashtag":"Cricket","count":34}]
 	return JsonResponse(data,safe=False)
 
+def keyword_top20_getter(request):
+	if request.method == 'GET':
+		print("GET request not supported at this route.")
+		return
+
+	form = Top10Form(request.POST)
+	if form.is_valid():
+		start_time = form.cleaned_data['start_time']
+		end_time = form.cleaned_data['end_time']
+		print(start_time, end_time)
+		data = mongoQuery.mp_kw_in_interval(20, start_time.timestamp(), end_time.timestamp())
+		data = [{"hashtag":x[0],"count":x[1]} for x in list(zip(data["hashtag"],data["count"]))]
+	else:
+		print(form['start_time'].errors, form['end_time'].errors)
+
+	# data = [{"hashtag":"Sports","count":132}, {"hashtag":"Politics","count":95}, {"hashtag":"Health","count":55}, {"hashtag":"Cricket","count":34}]
+	return JsonResponse(data,safe=False)
+
 def hashtag_sentiment_getter(request):
 	if request.method == 'GET':
 		print("GET request not supported at this route.")
@@ -207,6 +280,27 @@ def hashtag_sentiment_getter(request):
 	else:
 		print(form['hashtag'].errors, form['start_time'].errors, form['end_time'].errors)
 
+	# data = {"x":[1,2,3,4], "y":[6,2,5,2]}
+	return JsonResponse(data)
+
+def keyword_sentiment_getter(request):
+	if request.method == 'GET':
+		print("GET request not supported at this route.")
+		return
+
+	form = HashtagForm(request.POST)
+	if form.is_valid():
+		hashtag = form.cleaned_data['hashtag']
+		start_time = form.cleaned_data['start_time']
+		end_time = form.cleaned_data['end_time']
+		# print(hashtag, start_time, end_time)
+		data = mongoQuery.kw_with_sentiment(hashtag,start_time.timestamp(), end_time.timestamp())
+		# sentiments = [data["positive_sentiment"][i]-data["negative_sentiment"][i] for i in range(len(data["positive_sentiment"]))]
+		(x,y) = binning2(list(zip(data["timestamps"],data["sentiment"])),60)
+		data = {"x":x,"y":y}
+		# print(data)
+	else:
+		print(form['hashtag'].errors, form['start_time'].errors, form['end_time'].errors)
 	# data = {"x":[1,2,3,4], "y":[6,2,5,2]}
 	return JsonResponse(data)
 
